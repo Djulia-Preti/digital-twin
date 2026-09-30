@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Gêmeo digital do KIT-ESP32</title>
+<style>
+:root {
+  --bg: #E6ECF0; --ink: #0B1F33; --muted: #4A5C6E; --panel: #FFFFFF; --line: #B9C6D0;
+  --pcb: #0E5A44; --pcb-ink: #DDF3E8; --copper: #C98A3D;
+  --lcd-bg: #B8D46A; --lcd-ink: #1B2A0C; --ok: #0B7A4B; --bad: #B3261E;
+  --sans: 'Bahnschrift', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'Consolas', 'Cascadia Mono', monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 20px; line-height: 1.4; }
+.page { max-width: 1280px; margin: 0 auto; padding: 32px 28px 56px; display: grid; gap: 28px; }
+h1 { margin: 0; font-size: 40px; font-weight: 700; letter-spacing: -0.01em; }
+h2 { margin: 0 0 8px; font-size: 22px; font-weight: 600; color: var(--muted); }
+
+.top { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; }
+.status { display: flex; align-items: center; gap: 10px; padding: 10px 18px; border: 2px solid currentColor; border-radius: 999px; font-weight: 600; color: var(--bad); }
+.status.on { color: var(--ok); }
+.status .dot { width: 14px; height: 14px; border-radius: 50%; background: currentColor; }
+.status .stamp { font-weight: 400; color: var(--muted); }
+
+.board { background: var(--pcb); color: var(--pcb-ink); border: 4px solid var(--copper); border-radius: 14px; padding: 36px; display: grid; grid-template-columns: 1fr auto; gap: 48px; align-items: center; }
+.lcd { background: var(--lcd-bg); color: var(--lcd-ink); font-family: var(--mono); font-size: clamp(28px, 4.6vw, 64px); line-height: 1.25; white-space: pre; padding: 22px 28px; border: 6px solid #22311A; border-radius: 8px; box-shadow: inset 0 0 0 2px rgba(0,0,0,.25); overflow: hidden; }
+.led-wrap { text-align: center; }
+.led { width: 140px; height: 140px; margin: 12px auto 22px; border-radius: 50%; border: 6px solid #0A3D2F; background: #2A2F2C; transition: background .25s, box-shadow .25s; }
+.pins { margin: 14px 0 0; font-size: 16px; color: #A9D8C2; }
+.led-wrap .pins { margin-top: 0; }
+.stale { opacity: .55; }
+
+.readings { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.reading { background: var(--panel); border: 2px solid var(--line); border-radius: 10px; padding: 20px 22px; }
+.value { margin: 0; font-size: 64px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.value small { font-size: 26px; font-weight: 500; color: var(--muted); margin-left: 8px; }
+.pin { margin: 10px 0 0; font-size: 15px; color: var(--muted); }
+.track { position: relative; height: 16px; margin-top: 14px; background: #D7E0E7; border-radius: 8px; overflow: hidden; }
+.fill { height: 100%; width: 0; background: var(--pcb); transition: width .3s; }
+.marker { position: absolute; top: 0; left: 0; width: 10px; height: 100%; background: var(--copper); transform: translateX(-50%); transition: left .3s; }
+
+.controls { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.panel { background: var(--panel); border: 2px solid var(--line); border-radius: 10px; padding: 22px; display: grid; gap: 14px; align-content: start; }
+.toggles { display: flex; flex-wrap: wrap; gap: 12px; }
+.toggle, .send { font: inherit; font-weight: 600; padding: 14px 22px; border-radius: 8px; border: 2px solid var(--ink); background: var(--panel); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; gap: 10px; }
+.toggle[aria-pressed='true'] { background: var(--ink); color: #fff; }
+.send { background: var(--ink); color: #fff; justify-self: start; }
+.toggle:disabled, .send:disabled { opacity: .45; cursor: not-allowed; }
+.swatch { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #fff; outline: 2px solid var(--ink); }
+label { display: grid; gap: 6px; font-weight: 600; }
+input { font: inherit; font-family: var(--mono); padding: 12px 14px; border: 2px solid var(--line); border-radius: 8px; }
+button:focus-visible, input:focus-visible { outline: 4px solid #3E63DD; outline-offset: 2px; }
+.error { margin: 0; padding: 14px 18px; border: 2px solid var(--bad); border-radius: 8px; color: var(--bad); background: #FDECEA; font-weight: 600; }
+.error[hidden] { display: none; }
+
+@media (max-width: 1000px) { .readings { grid-template-columns: repeat(2, 1fr); } .board { grid-template-columns: 1fr; gap: 28px; } }
+@media (max-width: 640px) { .readings, .controls { grid-template-columns: 1fr; } h1 { font-size: 30px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="top">
+    <h1>Gêmeo digital do KIT-ESP32</h1>
+    <div id="status" class="status" role="status">
+      <span class="dot" aria-hidden="true"></span>
+      <span id="statusText">Backend desconectado</span>
+      <span id="stamp" class="stamp"></span>
+    </div>
+  </header>
+
+  <section id="board" class="board stale" aria-label="Placa">
+    <div>
+      <div class="lcd" aria-label="Tela do LCD"><div id="lcd1"></div><div id="lcd2"></div></div>
+      <p class="pins">LCD, GPIO 19 / 2 / 23 / 22 / 21 / 18</p>
+    </div>
+    <div class="led-wrap">
+      <div id="led" class="led" aria-label="LED RGB"></div>
+      <p class="pins">LED RGB, GPIO 25 / 26 / 27</p>
+    </div>
+  </section>
+
+  <section id="readings" class="readings stale" aria-label="Sensores">
+    <article class="reading">
+      <h2>Temperatura</h2>
+      <p class="value"><span id="temp">—</span><small>°C</small></p>
+      <p class="pin">DHT11, GPIO 15</p>
+    </article>
+    <article class="reading">
+      <h2>Umidade</h2>
+      <p class="value"><span id="hum">—</span><small>%</small></p>
+      <p class="pin">DHT11, GPIO 15</p>
+    </article>
+    <article class="reading">
+      <h2>Distância</h2>
+      <p class="value"><span id="dist">—</span><small>cm</small></p>
+      <div class="track" aria-hidden="true"><div id="marker" class="marker"></div></div>
+      <p class="pin">HC-SR04, Trig 13 e Echo 35 (escala até 200 cm)</p>
+    </article>
+    <article class="reading">
+      <h2>Entrada analógica</h2>
+      <p class="value"><span id="adc">—</span><small>/ 4095</small></p>
+      <div class="track" aria-hidden="true"><div id="adcFill" class="fill"></div></div>
+      <p class="pin">ADC, GPIO 33</p>
+    </article>
+  </section>
+
+  <section class="controls" aria-label="Comandos">
+    <div class="panel">
+      <h2>LED RGB</h2>
+      <div id="toggles" class="toggles"></div>
+    </div>
+    <form id="lcdForm" class="panel">
+      <h2>LCD</h2>
+      <label>Linha 1 <input id="line1" maxlength="16" placeholder="Até 16 caracteres" /></label>
+      <label>Linha 2 <input id="line2" maxlength="16" placeholder="Até 16 caracteres" /></label>
+      <button id="sendLcd" type="submit" class="send">Enviar ao LCD</button>
+    </form>
+  </section>
+
+  <p id="error" class="error" role="alert" hidden></p>
+</main>
+
+<script>
+const LCD_COLS = 16, ADC_MAX = 4095, DIST_SCALE_CM = 200;
+const CHANNELS = [
+  { key: 'r', label: 'Vermelho', color: '#E5484D' },
+  { key: 'g', label: 'Verde',    color: '#30A46C' },
+  { key: 'b', label: 'Azul',     color: '#3E63DD' },
+];
+
+let snapshot = { status: 'OFFLINE', telemetry: null, updatedAt: null };
+let backendUp = false;
+
+const $ = (id) => document.getElementById(id);
+const fmt = (v, d = 1) => (v === null || v === undefined ? '—' : Number(v).toFixed(d));
+const pad = (t) => (t ?? '').slice(0, LCD_COLS).padEnd(LCD_COLS, ' ');
+
+function ledColor(led) {
+  if (!led || (!led.r && !led.g && !led.b)) return '#2A2F2C';
+  return `rgb(${led.r ? 255 : 0}, ${led.g ? 255 : 0}, ${led.b ? 255 : 0})`;
+}
+
+// Botões do LED (criados uma vez)
+for (const { key, label, color } of CHANNELS) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'toggle';
+  btn.id = 'toggle-' + key;
+  const sw = document.createElement('span');
+  sw.className = 'swatch';
+  sw.style.background = color;
+  btn.append(sw, label);
+  btn.addEventListener('click', () => toggle(key));
+  $('toggles').append(btn);
+}
+
+function render() {
+  const { telemetry: t, status, updatedAt } = snapshot;
+  const online = backendUp && status === 'ONLINE';
+  const led = t?.led ?? null;
+
+  $('status').className = 'status ' + (online ? 'on' : '');
+  $('statusText').textContent = !backendUp ? 'Backend desconectado' : status === 'ONLINE' ? 'ESP32 online' : 'ESP32 offline';
+  $('stamp').textContent = updatedAt ? 'atualizado às ' + new Date(updatedAt).toLocaleTimeString('pt-BR') : '';
+  $('board').classList.toggle('stale', !online);
+  $('readings').classList.toggle('stale', !online);
+
+  $('lcd1').textContent = pad(t?.lcd?.line1);
+  $('lcd2').textContent = pad(t?.lcd?.line2);
+
+  const color = ledColor(led);
+  $('led').style.background = color;
+  $('led').style.boxShadow = led && (led.r || led.g || led.b) ? `0 0 60px 12px ${color}` : 'none';
+
+  $('temp').textContent = fmt(t?.temperature);
+  $('hum').textContent = fmt(t?.humidity);
+  $('dist').textContent = fmt(t?.distance);
+  $('adc').textContent = t?.adc ?? '—';
+  $('marker').style.left = (t?.distance == null ? 0 : Math.min(100, (t.distance / DIST_SCALE_CM) * 100)) + '%';
+  $('adcFill').style.width = (t?.adc == null ? 0 : (t.adc / ADC_MAX) * 100) + '%';
+
+  for (const { key } of CHANNELS) {
+    const b = $('toggle-' + key);
+    b.setAttribute('aria-pressed', String(!!led?.[key]));
+    b.disabled = !online;
+  }
+  $('sendLcd').disabled = !online;
+}
+
+// POST /command (Dashboard -> Spring Boot -> ESP32)
+async function sendCommand(command) {
+  const err = $('error');
+  err.hidden = true;
+  try {
+    const res = await fetch('/command', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(command),
+    });
+    if (!res.ok) throw new Error(res.status);
+  } catch {
+    err.textContent = 'Não foi possível enviar o comando. Confira se o ESP32 está online.';
+    err.hidden = false;
+  }
+}
+
+function toggle(channel) {
+  const led = snapshot.telemetry?.led;
+  const next = { r: !!led?.r, g: !!led?.g, b: !!led?.b };
+  next[channel] = !next[channel];
+  sendCommand({ led: next });
+}
+
+$('lcdForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  sendCommand({ lcd: { line1: $('line1').value, line2: $('line2').value } });
+});
+
+// SSE /events (o EventSource reconecta sozinho)
+const source = new EventSource('/events');
+source.onopen = () => { backendUp = true; render(); };
+source.onerror = () => { backendUp = false; render(); };
+source.addEventListener('snapshot', (e) => { snapshot = JSON.parse(e.data); render(); });
+
+render();
+</script>
+</body>
+</html>
