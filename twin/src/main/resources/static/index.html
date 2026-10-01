@@ -386,6 +386,31 @@ h1 {
   gap: 12px;
 }
 
+.channel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.channel input[type="range"] {
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.channel input[type="range"]:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.chan-val {
+  text-align: center;
+  color: var(--text-dim);
+  font: 700 11px var(--mono);
+}
+
 .toggle {
   min-height: 90px;
   display: flex;
@@ -497,6 +522,58 @@ input:focus {
   cursor: not-allowed;
   transform: none !important;
 }
+
+/* BOTÕES FÍSICOS */
+.buttons {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+.buttons.stale {
+  opacity: 0.5;
+  filter: grayscale(0.6);
+}
+
+.hw-btn {
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+  transition: all 0.15s ease;
+}
+
+.hw-btn h3 {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hw-btn .state {
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  font: 800 20px var(--mono);
+  letter-spacing: 0.02em;
+}
+
+.hw-btn.pressed {
+  border-color: var(--green);
+  background: rgba(16, 185, 129, 0.18);
+  box-shadow: 0 0 30px var(--green-glow), inset 0 0 20px rgba(16, 185, 129, 0.1);
+  transform: translateY(2px) scale(0.98);
+}
+
+.hw-btn.pressed .state { color: #34d399; }
 
 /* DIGITAL TWIN */
 .right-column {
@@ -643,6 +720,7 @@ input:focus {
 
 @media(max-width: 900px) {
   .readings { grid-template-columns: repeat(2, 1fr); }
+  .buttons { grid-template-columns: repeat(2, 1fr); }
   .controls { grid-template-columns: 1fr; }
 }
 
@@ -660,6 +738,7 @@ input:focus {
   .led { width: 90px; height: 90px; }
   .toggles { gap: 8px; }
   .toggle { min-height: 76px; padding: 10px; font-size: 10px; }
+  .hw-btn .state { font-size: 14px; }
 }
 
 @media(max-width: 400px) {
@@ -781,6 +860,15 @@ input:focus {
         </div>
       </section>
 
+      <section aria-label="Botões físicos">
+        <div class="section-title">
+          <h2>Botões Físicos</h2>
+          <span class="section-label">WEBSOCKET EVENTS</span>
+        </div>
+
+        <div id="buttons" class="buttons stale"></div>
+      </section>
+
     </div>
 
     <aside class="right-column">
@@ -820,29 +908,36 @@ const CHANNELS = [
   { key: 'b', label: 'Azul',     color: '#3b82f6' },
 ];
 
+const BUTTONS = [
+  { n: 1, pin: 0 },
+  { n: 2, pin: 4 },
+  { n: 3, pin: 16 },
+  { n: 4, pin: 17 },
+];
+
 let snapshot = { status: 'OFFLINE', telemetry: null, updatedAt: null };
 let backendUp = false;
 
 const $ = (id) => document.getElementById(id);
 const fmt = (v, d = 1) => (v === null || v === undefined ? '—' : Number(v).toFixed(d));
 const pad = (t) => (t ?? '').slice(0, LCD_COLS).padEnd(LCD_COLS, ' ');
+const pct = (v) => Math.round((v / 255) * 100) + '%';
+const dragging = { r: false, g: false, b: false };
 
 function getLedStyle(led) {
-  if (!led || (!led.r && !led.g && !led.b)) return { bg: '#090e17', shadow: 'none' };
-  
-  let r = led.r ? 255 : 0;
-  let g = led.g ? 255 : 0;
-  let b = led.b ? 255 : 0;
-  
-  // Ajuste para cores mais vivas
-  if (led.r && !led.g && !led.b) { r = 239; g = 68; b = 68; } // Red
-  if (!led.r && led.g && !led.b) { r = 16; g = 185; b = 129; } // Green
-  if (!led.r && !led.g && led.b) { r = 59; g = 130; b = 246; } // Blue
-  
-  const color = `rgb(${r}, ${g}, ${b})`;
+  const r = led?.r ?? 0, g = led?.g ?? 0, b = led?.b ?? 0;
+  const max = Math.max(r, g, b);
+  if (max === 0) return { bg: '#090e17', shadow: 'none' };
+
+  // mantém a cor e usa a intensidade como brilho (mínimo 30% pra aparecer na tela escura)
+  const brilho = 0.3 + 0.7 * (max / 255);
+  const cr = Math.round((r / max) * 255 * brilho);
+  const cg = Math.round((g / max) * 255 * brilho);
+  const cb = Math.round((b / max) * 255 * brilho);
+
   return {
-    bg: color,
-    shadow: `0 0 35px 8px rgba(${r}, ${g}, ${b}, 0.5), inset 0 0 15px rgba(255,255,255,0.4)`
+    bg: `rgb(${cr}, ${cg}, ${cb})`,
+    shadow: `0 0 ${Math.round(35 * brilho)}px ${Math.round(8 * brilho)}px rgba(${cr}, ${cg}, ${cb}, 0.5), inset 0 0 15px rgba(255,255,255,0.4)`
   };
 }
 
@@ -858,7 +953,41 @@ for (const { key, label, color } of CHANNELS) {
   sw.style.background = color;
   btn.append(sw, label);
   btn.addEventListener('click', () => toggle(key));
-  $('toggles').append(btn);
+
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.min = 0;
+  slider.max = 255;
+  slider.value = 0;
+  slider.id = 'slider-' + key;
+  slider.style.accentColor = color;
+
+  const val = document.createElement('span');
+  val.className = 'chan-val';
+  val.id = 'val-' + key;
+  val.textContent = '0%';
+
+  // enquanto arrasta só atualiza o número; envia ao soltar
+  slider.addEventListener('pointerdown', () => { dragging[key] = true; });
+  slider.addEventListener('input', () => { val.textContent = pct(slider.value); });
+  slider.addEventListener('change', () => {
+    dragging[key] = false;
+    setIntensity(key, Number(slider.value));
+  });
+
+  const box = document.createElement('div');
+  box.className = 'channel';
+  box.append(btn, slider, val);
+  $('toggles').append(box);
+}
+
+// Inicializa cards dos botões físicos
+for (const { n, pin } of BUTTONS) {
+  const card = document.createElement('article');
+  card.className = 'hw-btn';
+  card.id = 'btn-' + n;
+  card.innerHTML = `<h3>Botão ${n}</h3><p class="state" id="btn-state-${n}">SOLTO</p><p class="pin">GPIO ${pin}</p>`;
+  $('buttons').append(card);
 }
 
 function render() {
@@ -877,6 +1006,13 @@ function render() {
   }
 
   $('board').classList.toggle('stale', !online);$('readings').classList.toggle('stale', !online);
+  $('buttons').classList.toggle('stale', !online);
+
+  for (const { n } of BUTTONS) {
+    const pressed = !!t?.buttons?.['b' + n];
+    $('btn-' + n).classList.toggle('pressed', pressed);
+    $('btn-state-' + n).textContent = pressed ? 'PRESSIONADO' : 'SOLTO';
+  }
 
   $('lcd1').textContent = pad(t?.lcd?.line1);
   $('lcd2').textContent = pad(t?.lcd?.line2);
@@ -886,15 +1022,21 @@ function render() {
   $('led').style.boxShadow = ledStyle.shadow;
 
   $('temp').textContent = fmt(t?.temperature);$('hum').textContent = fmt(t?.humidity);
-  $('dist').textContent = fmt(t?.distance);$('adc').textContent = t?.adc ?? '—';
+  $('dist').textContent = fmt(t?.distance >= 0 ? t.distance : null);$('adc').textContent = t?.adc ?? '—';
   
-  $('marker').style.left = (t?.distance == null ? 0 : Math.min(100, (t.distance / DIST_SCALE_CM) * 100)) + '%';
+  $('marker').style.left = (t?.distance == null || t.distance < 0 ? 0 : Math.min(100, (t.distance / DIST_SCALE_CM) * 100)) + '%';
   $('adcFill').style.width = (t?.adc == null ? 0 : (t.adc / ADC_MAX) * 100) + '%';
 
   for (const { key } of CHANNELS) {
+    const v = led?.[key] ?? 0;
     const b = $('toggle-' + key);
-    b.setAttribute('aria-pressed', String(!!led?.[key]));
+    b.setAttribute('aria-pressed', String(v > 0));
     b.disabled = !online;
+    $('slider-' + key).disabled = !online;
+    if (!dragging[key]) {
+      $('slider-' + key).value = v;
+      $('val-' + key).textContent = pct(v);
+    }
   }
   $('sendLcd').disabled = !online;
 }
@@ -915,10 +1057,20 @@ async function sendCommand(command) {
   }
 }
 
-function toggle(channel) {
+function ledAtual() {
   const led = snapshot.telemetry?.led;
-  const next = { r: !!led?.r, g: !!led?.g, b: !!led?.b };
-  next[channel] = !next[channel];
+  return { r: led?.r ?? 0, g: led?.g ?? 0, b: led?.b ?? 0 };
+}
+
+function toggle(channel) {
+  const next = ledAtual();
+  next[channel] = next[channel] > 0 ? 0 : 255;
+  sendCommand({ led: next });
+}
+
+function setIntensity(channel, value) {
+  const next = ledAtual();
+  next[channel] = value;
   sendCommand({ led: next });
 }
 

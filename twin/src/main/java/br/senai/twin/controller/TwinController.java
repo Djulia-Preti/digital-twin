@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import br.senai.twin.model.Command;
@@ -40,7 +39,7 @@ public class TwinController {
         try {
             service.sendCommand(command);
             return ResponseEntity.accepted().build();
-        } catch (RestClientException e) {
+        } catch (IllegalStateException e) {
             System.err.println("Erro ao comunicar com ESP32: " + e.getMessage());
             e.printStackTrace(); // Exibe a pilha de erro real no terminal do Spring Boot
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY).build();

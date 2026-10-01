@@ -1,16 +1,16 @@
 package br.senai.twin.model;
 
 public class Led {
-    private Boolean r;
-    private Boolean g;
-    private Boolean b;
+    private Integer r;
+    private Integer g;
+    private Integer b;
 
-    public Boolean getR() { return r; }
-    public void setR(Boolean r) { this.r = r; }
+    public Integer getR() { return r; }
+    public void setR(Integer r) { this.r = r; }
 
-    public Boolean getG() { return g; }
-    public void setG(Boolean g) { this.g = g; }
+    public Integer getG() { return g; }
+    public void setG(Integer g) { this.g = g; }
 
-    public Boolean getB() { return b; }
-    public void setB(Boolean b) { this.b = b; }
+    public Integer getB() { return b; }
+    public void setB(Integer b) { this.b = b; }
 }

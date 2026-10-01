@@ -9,6 +9,7 @@ public class Telemetry {
     // Usando Led e Lcd para ficar igual ao Command.java
     private Led led;
     private Lcd lcd;
+    private Buttons buttons;
 
     public Double getTemperature() { return temperature; }
     public void setTemperature(Double temperature) { this.temperature = temperature; }
@@ -27,4 +28,7 @@ public class Telemetry {
     
     public Lcd getLcd() { return lcd; }
     public void setLcd(Lcd lcd) { this.lcd = lcd; }
+
+    public Buttons getButtons() { return buttons; }
+    public void setButtons(Buttons buttons) { this.buttons = buttons; }
 }
