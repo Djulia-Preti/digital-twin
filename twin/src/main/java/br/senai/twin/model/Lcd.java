@@ -1,7 +1,6 @@
-package main.java.br.senai.twin.model;
+package br.senai.twin.model;
 
 public class Lcd {
-
     private String line1;
     private String line2;
 

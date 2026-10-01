@@ -1,4 +1,4 @@
-package main.java.br.senai.twin.service;
+package br.senai.twin.service;
 
 import java.time.Instant;
 import java.util.List;
@@ -30,7 +30,7 @@ public class TwinService {
     }
 
     // a cada 1s pergunta pro ESP32 e manda pro front
-    @Scheduled(fixedDelay = 1000)
+    @Scheduled(fixedDelay = 3000)
     public void poll() {
         Snapshot snapshot = new Snapshot();
         try {

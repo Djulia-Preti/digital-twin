@@ -1,4 +1,4 @@
-package main.java.br.senai.twin.model;
+package br.senai.twin.model;
 
 import java.time.Instant;
 

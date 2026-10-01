@@ -1,7 +1,6 @@
-package main.java.br.senai.twin.model;
+package br.senai.twin.model;
 
 public class Led {
-
     private Boolean r;
     private Boolean g;
     private Boolean b;
