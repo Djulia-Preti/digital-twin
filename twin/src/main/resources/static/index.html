@@ -1,464 +1,690 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gêmeo Digital | KIT-ESP32</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* Cores Base - Tema Dark Moderno */
-  --bg: #09090b; 
-  --panel: #18181b; 
-  --panel-hover: #27272a;
-  --ink: #f4f4f5; 
-  --muted: #a1a1aa; 
-  --line: #27272a;
+  --bg-dark: #05080e;
+  --bg-card: rgba(13, 20, 32, 0.7);
+  --bg-card-hover: rgba(20, 30, 48, 0.85);
+  --border-color: rgba(56, 189, 248, 0.15);
+  --border-highlight: rgba(56, 189, 248, 0.4);
   
-  /* Cores de Estado */
-  --accent: #3b82f6;
-  --accent-hover: #2563eb;
-  --ok: #10b981; 
-  --bad: #ef4444; 
+  --text-main: #f1f5f9;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
   
-  /* Placa e Componentes */
-  --pcb-bg: #121214; 
-  --lcd-bg: #020617; 
-  --lcd-ink: #38bdf8;
+  --cyan: #38bdf8;
+  --cyan-glow: rgba(56, 189, 248, 0.35);
+  --purple: #a855f7;
+  --green: #10b981;
+  --green-glow: rgba(16, 185, 129, 0.4);
+  --red: #f43f5e;
+  --amber: #f59e0b;
   
-  /* Tipografia */
-  --sans: 'Inter', system-ui, sans-serif;
-  --mono: 'Fira Code', monospace;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 }
 
 * { box-sizing: border-box; }
 
-body { 
-  margin: 0; 
-  background-color: var(--bg);
-  background-image: radial-gradient(circle at 50% 0%, #1f1f22 0%, transparent 70%);
-  color: var(--ink); 
-  font-family: var(--sans); 
-  font-size: 15px; 
-  line-height: 1.5; 
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
   min-height: 100vh;
+  color: var(--text-main);
+  font-family: var(--sans);
+  background-color: var(--bg-dark);
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.08) 0%, transparent 40%),
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+  background-attachment: fixed;
 }
 
-/* Layout Principal */
-.page { 
-  max-width: 1300px; 
-  margin: 0 auto; 
-  padding: 40px 24px; 
-  display: flex; 
-  flex-direction: column; 
-  gap: 32px; 
+button, input { font: inherit; }
+
+.page {
+  position: relative;
+  z-index: 1;
+  width: min(1440px, 100%);
+  margin: auto;
+  padding: 32px 24px;
 }
 
-/* Cabeçalho */
-.top { 
-  display: flex; 
-  flex-wrap: wrap; 
-  gap: 20px; 
-  align-items: center; 
-  justify-content: space-between; 
-  background: rgba(24, 24, 27, 0.7);
-  backdrop-filter: blur(12px);
-  padding: 24px 32px;
-  border-radius: 20px;
-  border: 1px solid var(--line);
-  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
-}
-
-h1 { 
-  margin: 0; 
-  font-size: 26px; 
-  font-weight: 700; 
-  letter-spacing: -0.02em; 
+/* HEADER */
+.top {
+  min-height: 88px;
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-h1::before {
-  content: '';
-  display: block;
-  width: 6px;
-  height: 24px;
-  background: var(--accent);
-  border-radius: 6px;
-  box-shadow: 0 0 12px var(--accent);
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 28px;
+  margin-bottom: 28px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: rgba(10, 16, 26, 0.75);
+  box-shadow: 0 16px 40px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
 }
 
-h2 { margin: 0 0 20px; font-size: 16px; font-weight: 600; color: var(--ink); letter-spacing: 0.02em; text-transform: uppercase; }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
 
-/* Status Badge */
-.status { 
-  display: inline-flex; 
-  align-items: center; 
-  gap: 10px; 
-  padding: 8px 16px; 
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2); 
-  border-radius: 999px; 
-  font-weight: 500; 
-  color: var(--bad);
-  font-size: 13px;
+.brand-icon {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: var(--cyan);
+  font-size: 22px;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(168, 85, 247, 0.1));
+  border: 1px solid var(--border-highlight);
+  box-shadow: 0 0 20px var(--cyan-glow);
+}
+
+h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff 30%, var(--cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-radius: 30px;
+  color: var(--red);
+  background: rgba(244, 63, 94, 0.1);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: 0.03em;
   transition: all 0.3s ease;
 }
-.status.on { 
-  color: var(--ok); 
-  border-color: rgba(16, 185, 129, 0.3);
-  background: rgba(16, 185, 129, 0.1);
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
-}
-.status .dot { 
-  width: 8px; 
-  height: 8px; 
-  border-radius: 50%; 
-  background: currentColor; 
-  box-shadow: 0 0 8px currentColor;
-}
-.status .stamp { font-weight: 400; opacity: 0.6; font-size: 12px; font-family: var(--mono); }
 
-/* Dashboard Grid */
+.status.on {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 20px var(--green-glow);
+}
+
+.status .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 10px currentColor;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.status .stamp {
+  padding-left: 6px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: 11px;
+}
+
+/* ERROR */
+.error {
+  margin: 0 0 24px;
+  padding: 16px 20px;
+  border: 1px solid rgba(244, 63, 94, 0.4);
+  border-left: 4px solid var(--red);
+  border-radius: 14px;
+  color: #fecdd3;
+  background: rgba(244, 63, 94, 0.12);
+  backdrop-filter: blur(10px);
+  font-size: 13px;
+  font-weight: 500;
+}
+.error[hidden] { display: none; }
+
+/* MAIN GRID */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1fr 420px;
-  gap: 32px;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 28px;
   align-items: start;
 }
 
 .left-column {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 28px;
 }
 
-/* Gêmeo Físico (Placa) */
-.board { 
-  background-color: var(--pcb-bg); 
-  background-image: 
-    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-  background-size: 20px 20px;
-  border: 1px solid #333; 
-  border-radius: 24px; 
-  padding: 40px 32px; 
-  display: flex; 
-  flex-direction: column; 
-  gap: 48px; 
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 20px 40px -15px rgba(0,0,0,0.7);
+/* SECTION TITLE */
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
 }
 
-.board::before {
-  content: 'ESP32 HW';
-  position: absolute;
-  bottom: 16px; right: 20px;
-  font-family: var(--mono);
-  color: rgba(255,255,255,0.1);
-  font-size: 24px;
+.section-title h2 {
+  margin: 0;
+  font-size: 12px;
   font-weight: 700;
-  pointer-events: none;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
 }
 
-/* LCD OLED Style */
-.lcd { 
-  background: var(--lcd-bg); 
-  color: var(--lcd-ink); 
-  font-family: var(--mono); 
-  font-size: 24px;
-  font-weight: 500;
-  line-height: 1.5; 
-  white-space: pre; 
-  padding: 20px; 
-  border: 4px solid #000; 
-  border-radius: 12px; 
-  box-shadow: inset 0 0 20px rgba(0,0,0,1), 0 0 0 1px #333; 
-  text-shadow: 0 0 5px rgba(56, 189, 248, 0.5);
-  overflow: hidden; 
-  position: relative;
-}
-/* Efeito de scanline no LCD */
-.lcd::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%);
-  background-size: 100% 4px;
-  pointer-events: none;
-}
-
-.led-wrap { text-align: center; }
-
-/* LED 3D Style */
-.led { 
-  width: 90px; 
-  height: 90px; 
-  margin: 0 auto 16px; 
-  border-radius: 50%; 
-  border: 2px solid #27272a; 
-  background: #111827; 
-  position: relative;
-  transition: all 0.4s ease; 
-}
-/* Reflexo de vidro no LED */
-.led::after {
-  content: '';
-  position: absolute;
-  top: 15%; left: 20%;
-  width: 30%; height: 30%;
-  background: radial-gradient(circle, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 60%);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.pins { 
-  margin: 12px 0 0; 
-  font-size: 12px; 
-  color: var(--muted); 
+.section-label {
+  color: var(--cyan);
+  font-size: 10px;
   font-family: var(--mono);
-  background: rgba(0,0,0,0.4);
-  padding: 6px 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
   border-radius: 6px;
-  display: inline-block;
-  border: 1px solid var(--line);
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.2);
 }
 
-.stale { opacity: 0.5; filter: grayscale(80%); pointer-events: none; }
-
-/* Sensores (Cards) */
-.readings { 
-  display: grid; 
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
-  gap: 20px; 
+/* SENSOR CARDS */
+.readings {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
 }
-.reading { 
-  background: var(--panel); 
-  border: 1px solid var(--line); 
-  border-radius: 20px; 
-  padding: 24px; 
-  transition: all 0.2s ease;
+
+.reading {
   position: relative;
+  min-height: 180px;
+  padding: 20px;
   overflow: hidden;
-}
-.reading:hover {
-  background: var(--panel-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px -10px rgba(0,0,0,0.5);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-/* Detalhes coloridos sutis em cada card */
-.reading::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+.reading:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-highlight);
+  background: var(--bg-card-hover);
+  box-shadow: 0 20px 40px -15px rgba(0,0,0,0.7), 0 0 20px rgba(56, 189, 248, 0.1);
 }
-.reading:nth-child(1)::before { background: #ef4444; box-shadow: 0 0 10px #ef4444; }
-.reading:nth-child(2)::before { background: #3b82f6; box-shadow: 0 0 10px #3b82f6; }
-.reading:nth-child(3)::before { background: #f59e0b; box-shadow: 0 0 10px #f59e0b; }
-.reading:nth-child(4)::before { background: #8b5cf6; box-shadow: 0 0 10px #8b5cf6; }
+
+.reading::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--card-glow, var(--cyan)), transparent);
+  opacity: 0.7;
+}
+
+.reading:nth-child(1) { --card-glow: var(--red); }
+.reading:nth-child(2) { --card-glow: var(--cyan); }
+.reading:nth-child(3) { --card-glow: var(--amber); }
+.reading:nth-child(4) { --card-glow: var(--purple); }
 
 .reading-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
 }
-.reading-header h3 { margin: 0; font-size: 15px; color: var(--muted); font-weight: 500;}
-.icon { font-size: 20px; opacity: 0.9; }
 
-.value { 
-  margin: 0; 
-  font-size: 42px; 
-  font-weight: 700; 
-  font-variant-numeric: tabular-nums; 
-  line-height: 1; 
-  color: #fff;
+.reading-header h3 {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
-.value small { 
-  font-size: 16px; 
-  font-weight: 500; 
-  color: var(--muted); 
-  margin-left: 6px; 
+
+.icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 16px;
 }
-.pin { 
-  margin: 20px 0 0; 
-  font-size: 12px; 
-  color: #52525b; 
+
+.value {
+  margin: 12px 0 0;
+  font-size: 36px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
   font-family: var(--mono);
 }
 
-/* Barras de Progresso */
-.track { 
-  position: relative; 
-  height: 6px; 
-  margin-top: 20px; 
-  background: #27272a; 
-  border-radius: 999px; 
-  overflow: hidden; 
-}
-.fill { 
-  height: 100%; 
-  width: 0; 
-  background: linear-gradient(90deg, #8b5cf6, #c4b5fd); 
-  transition: width 0.4s ease-out; 
-  border-radius: 999px;
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
-}
-.marker { 
-  position: absolute; 
-  top: 0; 
-  left: 0; 
-  width: 4px; 
-  height: 100%; 
-  background: #f59e0b; 
-  transform: translateX(-50%); 
-  transition: left 0.4s ease-out; 
-  border-radius: 2px;
-  box-shadow: 0 0 8px #f59e0b;
+.value small {
+  margin-left: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--sans);
 }
 
-/* Controlos */
-.controls { 
-  display: grid; 
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-  gap: 20px; 
+.pin {
+  margin: 14px 0 0;
+  color: var(--text-muted);
+  font: 10px var(--mono);
+  letter-spacing: 0.02em;
 }
-.control-panel { 
-  background: var(--panel); 
-  border: 1px solid var(--line); 
-  border-radius: 20px; 
-  padding: 30px; 
+
+.track {
+  position: relative;
+  height: 6px;
+  margin-top: 14px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: visible;
+}
+
+.fill {
+  height: 100%;
+  width: 0;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--cyan), var(--purple));
+  box-shadow: 0 0 12px var(--purple);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.marker {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--amber);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 12px var(--amber);
+  transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* CONTROLS */
+.controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.control-panel {
+  padding: 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+}
+
+.control-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-main);
+}
+
+.control-panel h2::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan);
+}
+
+.toggles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.toggle {
+  min-height: 90px;
   display: flex;
   flex-direction: column;
-  gap: 20px; 
-}
-
-.toggles { 
-  display: flex; 
-  flex-wrap: wrap; 
-  gap: 12px; 
-}
-.toggle { 
-  flex: 1;
-  min-width: 120px;
-  font: inherit; 
-  font-size: 14px;
-  font-weight: 500; 
-  padding: 14px 20px; 
-  border-radius: 12px; 
-  border: 1px solid var(--line); 
-  background: rgba(255,255,255,0.02); 
-  color: var(--muted); 
-  cursor: pointer; 
-  display: inline-flex; 
-  align-items: center; 
+  align-items: center;
   justify-content: center;
-  gap: 10px; 
-  transition: all 0.2s;
-}
-.toggle:hover:not(:disabled) { 
-  background: rgba(255,255,255,0.05); 
-  color: var(--ink);
-}
-.toggle[aria-pressed='true'] { 
-  background: var(--ink); 
-  color: var(--bg); 
-  border-color: var(--ink);
-  font-weight: 600;
-}
-.swatch { 
-  width: 12px; 
-  height: 12px; 
-  border-radius: 50%; 
-  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px currentColor; 
-}
-.toggle[aria-pressed='true'] .swatch {
-  box-shadow: 0 0 0 2px var(--ink), 0 0 0 4px currentColor; 
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  color: var(--text-dim);
+  background: rgba(5, 8, 14, 0.6);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-/* Formulário do LCD */
+.toggle:hover:not(:disabled) {
+  transform: translateY(-2px);
+  color: var(--text-main);
+  border-color: var(--border-highlight);
+  background: rgba(20, 30, 48, 0.8);
+}
+
+.toggle[aria-pressed="true"] {
+  color: #ffffff;
+  border-color: currentColor;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 20px rgba(255,255,255,0.02);
+}
+
+.swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(5, 8, 14, 0.8), 0 0 0 4px currentColor;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.toggle[aria-pressed="true"] .swatch {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 3px rgba(20, 30, 48, 1), 0 0 16px 3px currentColor;
+}
+
 .lcd-form {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
-label { 
-  display: grid; 
-  gap: 8px; 
-  font-size: 13px;
-  font-weight: 500; 
-  color: var(--muted);
-}
-input { 
-  font: inherit; 
-  font-family: var(--mono); 
-  font-size: 15px;
-  padding: 14px 16px; 
-  border: 1px solid var(--line); 
-  border-radius: 12px;
-  background: rgba(0,0,0,0.3);
-  color: var(--ink);
-  transition: all 0.2s;
-}
-input::placeholder { color: #52525b; }
-button:focus-visible, input:focus-visible { 
-  outline: none; 
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-}
 
-.send { 
-  font: inherit; 
-  font-weight: 600; 
-  padding: 14px 20px; 
-  border-radius: 12px; 
-  background: var(--accent); 
-  color: #fff; 
-  border: none;
-  cursor: pointer;
+label {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  outline: none;
+  color: var(--text-main);
+  background: rgba(5, 8, 14, 0.6);
+  font: 13px var(--mono);
+  transition: all 0.2s ease;
+}
+
+input::placeholder { color: var(--text-muted); }
+
+input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+  background: rgba(5, 8, 14, 0.9);
+}
+
+.send {
+  width: 100%;
+  margin-top: auto;
+  padding: 14px 18px;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 12px;
+  color: #ffffff;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.8), rgba(2, 132, 199, 0.9));
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.25);
+}
+
+.send:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(14, 165, 233, 0.4);
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+}
+
+.toggle:disabled, .send:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* DIGITAL TWIN */
+.right-column {
+  position: sticky;
+  top: 24px;
+}
+
+.board {
+  position: relative;
+  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 40px 30px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  background: 
+    radial-gradient(circle at 50% 30%, rgba(56, 189, 248, 0.05), transparent 60%),
+    linear-gradient(160deg, rgba(13, 20, 32, 0.95), rgba(5, 8, 14, 0.98));
+  box-shadow: inset 0 0 50px rgba(0,0,0,0.8), 0 20px 50px -10px rgba(0,0,0,0.7);
+  backdrop-filter: blur(20px);
+}
+
+.board::before {
+  content: "DIGITAL TWIN • SIMULATION";
+  position: absolute;
+  top: 18px;
+  left: 24px;
+  color: var(--text-muted);
+  font: 700 9px var(--mono);
+  letter-spacing: 0.18em;
+}
+
+.board::after {
+  content: "ESP32 HARDWARE";
+  position: absolute;
+  right: 24px;
+  bottom: 18px;
+  color: rgba(255, 255, 255, 0.15);
+  font: 700 9px var(--mono);
+  letter-spacing: 0.15em;
+}
+
+.board.stale {
+  opacity: 0.5;
+  filter: grayscale(0.6);
+}
+
+.lcd {
+  position: relative;
+  min-height: 130px;
+  display: flex;
+  flex-direction: column;
   justify-content: center;
-  align-items: center;
-  margin-top: 8px;
-  transition: all 0.2s;
+  padding: 20px 24px;
+  overflow: hidden;
+  border: 8px solid #090d14;
+  border-radius: 14px;
+  color: var(--cyan);
+  background: 
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)),
+    #041421;
+  background-size: 100% 4px, 6px 100%, 100% 100%;
+  box-shadow: 
+    inset 0 0 20px rgba(0, 0, 0, 0.9),
+    0 0 25px rgba(56, 189, 248, 0.12);
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
+  font: 600 18px/1.6 var(--mono);
+  letter-spacing: 0.05em;
 }
-.send:hover:not(:disabled) { 
-  background: var(--accent-hover); 
-  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
-}
-.toggle:disabled, .send:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* Erro */
-.error { 
-  margin: 0; 
-  padding: 16px 20px; 
-  border-left: 4px solid var(--bad); 
-  border-radius: 12px; 
-  color: #fca5a5; 
-  background: rgba(239, 68, 68, 0.1); 
-  font-weight: 500; 
-  backdrop-filter: blur(8px);
+.lcd::before {
+  content: "DISPLAY I2C";
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  color: rgba(56, 189, 248, 0.3);
+  font: 7px var(--mono);
+  letter-spacing: 0.15em;
 }
-.error[hidden] { display: none; }
 
-/* Responsividade */
-@media (max-width: 1024px) { 
-  .dashboard-grid { grid-template-columns: 1fr; } 
-  .board { flex-direction: row; align-items: center; justify-content: space-around; }
+.pins {
+  display: inline-flex;
+  margin: 12px 0 0;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.4);
+  font: 10px var(--mono);
 }
-@media (max-width: 768px) { 
-  .board { flex-direction: column; padding: 32px 24px; gap: 32px; }
-  h1 { font-size: 20px; }
-  .top { flex-direction: column; align-items: flex-start; }
+
+.led-wrap {
+  text-align: center;
+  margin-top: 20px;
 }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+.led-wrap::before {
+  content: "STATUS RGB LED";
+  display: block;
+  margin-bottom: 20px;
+  color: var(--text-muted);
+  font: 700 9px var(--mono);
+  letter-spacing: 0.18em;
+}
+
+.led {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  margin: 0 auto 16px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  background: #090e17;
+  transition: all 0.4s ease;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
+}
+
+.led::after {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: 20px;
+  width: 30px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.4), transparent 70%);
+  transform: rotate(-30deg);
+}
+
+.led-wrap .pins {
+  margin-top: 0;
+}
+
+/* RESPONSIVE */
+@media(max-width: 1150px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .right-column { position: static; }
+  .board { min-height: auto; flex-direction: row; align-items: center; gap: 20px; }
+  .led-wrap { margin-top: 0; }
+}
+
+@media(max-width: 900px) {
+  .readings { grid-template-columns: repeat(2, 1fr); }
+  .controls { grid-template-columns: 1fr; }
+}
+
+@media(max-width: 600px) {
+  .page { padding: 16px; }
+  .top { padding: 18px; align-items: flex-start; flex-direction: column; }
+  .brand-icon { width: 42px; height: 42px; }
+  h1 { font-size: 18px; }
+  .status { width: 100%; justify-content: center; }
+  .readings { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .reading { min-height: 150px; padding: 16px; }
+  .value { font-size: 28px; }
+  .board { flex-direction: column; padding: 28px 20px; gap: 30px; }
+  .lcd { font-size: 14px; min-height: 100px; }
+  .led { width: 90px; height: 90px; }
+  .toggles { gap: 8px; }
+  .toggle { min-height: 76px; padding: 10px; font-size: 10px; }
+}
+
+@media(max-width: 400px) {
+  .readings { grid-template-columns: 1fr; }
+}
+
+@media(prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+
 </style>
 </head>
+
 <body>
 <main class="page">
+
   <header class="top">
-    <h1>Gêmeo Digital do KIT-ESP32</h1>
+    <div class="brand">
+      <div class="brand-icon">⚙</div>
+      <div>
+        <h1>Gêmeo Digital do KIT-ESP32</h1>
+        <p class="subtitle">Monitoramento • Controle • Telemetria em Tempo Real</p>
+      </div>
+    </div>
+
     <div id="status" class="status" role="status">
       <span class="dot" aria-hidden="true"></span>
       <span id="statusText">Backend desconectado</span>
@@ -469,87 +695,123 @@ button:focus-visible, input:focus-visible {
   <p id="error" class="error" role="alert" hidden></p>
 
   <div class="dashboard-grid">
-    <!-- Coluna de Dados e Comandos -->
+
     <div class="left-column">
-      
-      <section id="readings" class="readings stale" aria-label="Sensores">
-        <article class="reading">
-          <div class="reading-header">
-            <h3>Temperatura</h3>
-            <span class="icon">🌡️</span>
-          </div>
-          <p class="value"><span id="temp">—</span><small>°C</small></p>
-          <p class="pin">DHT11, GPIO 15</p>
-        </article>
-        
-        <article class="reading">
-          <div class="reading-header">
-            <h3>Umidade</h3>
-            <span class="icon">💧</span>
-          </div>
-          <p class="value"><span id="hum">—</span><small>%</small></p>
-          <p class="pin">DHT11, GPIO 15</p>
-        </article>
-        
-        <article class="reading">
-          <div class="reading-header">
-            <h3>Distância</h3>
-            <span class="icon">📏</span>
-          </div>
-          <p class="value"><span id="dist">—</span><small>cm</small></p>
-          <div class="track" aria-hidden="true"><div id="marker" class="marker"></div></div>
-          <p class="pin">HC-SR04, Trig 13 / Echo 35</p>
-        </article>
-        
-        <article class="reading">
-          <div class="reading-header">
-            <h3>ADC (Luz/Pot)</h3>
-            <span class="icon">⚡</span>
-          </div>
-          <p class="value"><span id="adc">—</span><small>/ 4095</small></p>
-          <div class="track" aria-hidden="true"><div id="adcFill" class="fill"></div></div>
-          <p class="pin">ADC, GPIO 33</p>
-        </article>
+
+      <section aria-label="Telemetria">
+        <div class="section-title">
+          <h2>Telemetria</h2>
+          <span class="section-label">LIVE DATA</span>
+        </div>
+
+        <div id="readings" class="readings stale">
+
+          <article class="reading">
+            <div class="reading-header">
+              <h3>Temperatura</h3>
+              <span class="icon">🌡</span>
+            </div>
+            <p class="value"><span id="temp">—</span><small>°C</small></p>
+            <p class="pin">DHT11 • GPIO 15</p>
+          </article>
+
+          <article class="reading">
+            <div class="reading-header">
+              <h3>Umidade</h3>
+              <span class="icon">💧</span>
+            </div>
+            <p class="value"><span id="hum">—</span><small>%</small></p>
+            <p class="pin">DHT11 • GPIO 15</p>
+          </article>
+
+          <article class="reading">
+            <div class="reading-header">
+              <h3>Distância</h3>
+              <span class="icon">↔</span>
+            </div>
+            <p class="value"><span id="dist">—</span><small>cm</small></p>
+            <div class="track" aria-hidden="true"><div id="marker" class="marker"></div></div>
+            <p class="pin">HC-SR04 • TRIG 13 / ECHO 35</p>
+          </article>
+
+          <article class="reading">
+            <div class="reading-header">
+              <h3>ADC / Potenciômetro</h3>
+              <span class="icon">ϟ</span>
+            </div>
+            <p class="value"><span id="adc">—</span><small>/ 4095</small></p>
+            <div class="track" aria-hidden="true"><div id="adcFill" class="fill"></div></div>
+            <p class="pin">ADC • GPIO 33</p>
+          </article>
+
+        </div>
       </section>
 
-      <section class="controls" aria-label="Comandos">
-        <div class="control-panel">
-          <h2>Controlo do LED RGB</h2>
-          <div id="toggles" class="toggles"></div>
+      <section aria-label="Controles">
+        <div class="section-title">
+          <h2>Controle do Dispositivo</h2>
+          <span class="section-label">COMMAND CENTER</span>
         </div>
-        
-        <form id="lcdForm" class="control-panel lcd-form">
-          <h2>Mensagem no LCD</h2>
-          <label>Linha 1 
-            <input id="line1" maxlength="16" placeholder="Até 16 caracteres" autocomplete="off" />
-          </label>
-          <label>Linha 2 
-            <input id="line2" maxlength="16" placeholder="Até 16 caracteres" autocomplete="off" />
-          </label>
-          <button id="sendLcd" type="submit" class="send">Enviar ao ESP32</button>
-        </form>
+
+        <div class="controls">
+
+          <div class="control-panel">
+            <h2>LED RGB</h2>
+            <div id="toggles" class="toggles"></div>
+          </div>
+
+          <form id="lcdForm" class="control-panel lcd-form">
+            <h2>Mensagem no LCD</h2>
+
+            <label>
+              Linha 01
+              <input id="line1" maxlength="16" placeholder="Até 16 caracteres" autocomplete="off">
+            </label>
+
+            <label>
+              Linha 02
+              <input id="line2" maxlength="16" placeholder="Até 16 caracteres" autocomplete="off">
+            </label>
+
+            <button id="sendLcd" type="submit" class="send">
+              Enviar mensagem ao ESP32
+            </button>
+          </form>
+
+        </div>
       </section>
 
     </div>
 
-    <!-- Coluna do Gêmeo Físico -->
-    <div class="right-column">
+    <aside class="right-column">
+      <div class="section-title">
+        <h2>Gêmeo Físico</h2>
+        <span class="section-label">HARDWARE VIEW</span>
+      </div>
+
       <section id="board" class="board stale" aria-label="Placa Física">
+
         <div>
-          <div class="lcd" aria-label="Tela do LCD"><div id="lcd1"></div><div id="lcd2"></div></div>
-          <p class="pins">LCD, I2C / GPIO 19, 2, 23...</p>
+          <div class="lcd" aria-label="Tela do LCD">
+            <div id="lcd1"></div>
+            <div id="lcd2"></div>
+          </div>
+          <p class="pins">LCD • I2C / GPIO 19, 2, 23...</p>
         </div>
+
         <div class="led-wrap">
           <div id="led" class="led" aria-label="LED RGB"></div>
-          <p class="pins">LED RGB, GPIO 25, 26, 27</p>
+          <p class="pins">LED RGB • GPIO 25, 26, 27</p>
         </div>
+
       </section>
-    </div>
-    
+    </aside>
+
   </div>
 </main>
 
 <script>
+
 // A lógica JavaScript permanece intacta
 const LCD_COLS = 16, ADC_MAX = 4095, DIST_SCALE_CM = 200;
 const CHANNELS = [
@@ -566,7 +828,7 @@ const fmt = (v, d = 1) => (v === null || v === undefined ? '—' : Number(v).toF
 const pad = (t) => (t ?? '').slice(0, LCD_COLS).padEnd(LCD_COLS, ' ');
 
 function getLedStyle(led) {
-  if (!led || (!led.r && !led.g && !led.b)) return { bg: '#111827', shadow: 'none' };
+  if (!led || (!led.r && !led.g && !led.b)) return { bg: '#090e17', shadow: 'none' };
   
   let r = led.r ? 255 : 0;
   let g = led.g ? 255 : 0;
@@ -675,6 +937,7 @@ source.addEventListener('snapshot', (e) => {
 });
 
 render();
+
 </script>
 </body>
 </html>
